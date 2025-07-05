@@ -953,31 +953,11 @@ if __name__ == '__main__':
     debug_mode = app_config.get("debug", True)
     app.config['DEBUG'] = debug_mode
     
-    # Get host and port
-    host = app_config.get("host", "localhost")
-    port = app_config.get("port", 5000)
+    # RENDER.COM FIX - Always use 0.0.0.0 and Render's PORT
+    host = "0.0.0.0"
+    port = int(os.environ.get("PORT", app_config.get("port", 5000)))
     
-    logger.info(f"Starting RAI Companion Flask app...")
-    logger.info(f"Components loaded: {rai_companion.components_loaded}")
-    logger.info(f"Available models: {list(rai_companion.get_available_models().keys())}")
-    logger.info(f"Debug mode: {debug_mode}")
-    
-    print(f"""
-╔═══════════════════════════════════════════════════════════════╗
-║                    RAI COMPANION v1.0                        ║
-║              Real Artificial Intelligence Framework           ║
-╠═══════════════════════════════════════════════════════════════╣
-║                                                               ║
-║  🌐 Server: http://{host}:{port}                               ║
-║  📊 Health: http://{host}:{port}/health                       ║ 
-║  🔧 Config: http://{host}:{port}/config                       ║
-║  🐛 Debug:  http://{host}:{port}/debug/stats                  ║
-║                                                               ║
-║  Components: {"✅ Loaded" if rai_companion.components_loaded else "❌ Limited"}                            ║
-║  Models: {len(rai_companion.get_available_models())} available                                 ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-""")
+    logger.info(f"Starting RAI Companion Flask app on {host}:{port}")
     
     try:
         app.run(
@@ -986,8 +966,6 @@ if __name__ == '__main__':
             debug=debug_mode,
             threaded=True
         )
-    except KeyboardInterrupt:
-        logger.info("Server shutdown by user")
     except Exception as e:
         logger.error(f"Server startup failed: {str(e)}")
         raise
