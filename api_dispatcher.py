@@ -10,7 +10,7 @@ import json
 import logging
 import time
 import os
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, Optional, Tuple, Any, List
 from dataclasses import dataclass
 from enum import Enum
 import requests
