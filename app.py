@@ -170,7 +170,7 @@ class RAICompanion:
                 return rai_result
             
             # Step 2: Select relevant premises
-            premise_result = self._select_premises(rai_result["rai_input"])
+            premise_result = self._suggest_premises(rai_result["rai_input"])
             if "error" in premise_result:
                 return premise_result
             
