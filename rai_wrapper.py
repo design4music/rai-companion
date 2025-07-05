@@ -173,7 +173,7 @@ class RAIWrapper:
             prompt = self._build_rai_prompt(rai_input, config, premises, modules)
             
             return {
-                "input": rai_input,
+                "rai_input": rai_input,
                 "config": config,
                 "premises": premises,
                 "modules": modules,
