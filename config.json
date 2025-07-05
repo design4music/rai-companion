@@ -1,0 +1,149 @@
+{
+  "app": {
+    "name": "RAI Companion",
+    "version": "1.0.0",
+    "debug": true,
+    "host": "localhost",
+    "port": 5000,
+    "secret_key": "rai-framework-secret-key-2025"
+  },
+  "analysis": {
+    "default_mode": "guided",
+    "max_input_length": 10000,
+    "timeout_seconds": 120,
+    "max_modules_per_level": 7,
+    "enable_wisdom_overlay": true,
+    "premise_threshold": 3
+  },
+  "openai": {
+    "enabled": true,
+    "api_key": "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",
+    "model": "gpt-4",
+    "max_tokens": 4000,
+    "temperature": 0.3,
+    "timeout": 120,
+    "max_retries": 3
+  },
+  "deepseek": {
+    "enabled": true,
+    "api_key": "sk-7f684036607a4647bfb08df006b54ea1",
+    "model": "deepseek-chat",
+    "base_url": "https://api.deepseek.com/v1",
+    "max_tokens": 4000,
+    "temperature": 0.3,
+    "timeout": 120,
+    "max_retries": 3
+  },
+  "anthropic": {
+    "enabled": false,
+    "api_key": "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",
+    "model": "claude-3-sonnet-20240229",
+    "max_tokens": 4000,
+    "temperature": 0.3,
+    "timeout": 120,
+    "max_retries": 3
+  },
+  "gemini": {
+    "enabled": true,
+    "api_key": "AIzaSyALILuPtR_pjm4bIWpft_nO6hgmQH4kcxo",
+    "model": "gemini-pro",
+    "max_tokens": 4000,
+    "temperature": 0.3,
+    "timeout": 120,
+    "max_retries": 3
+  },
+  "models": {
+    "gpt": "gpt-4",
+    "gpt-4": "gpt-4",
+    "gpt-3.5": "gpt-3.5-turbo",
+    "deepseek": "deepseek-chat",
+    "deepseek-chat": "deepseek-chat",
+    "claude": "claude-3-sonnet-20240229",
+    "claude-3": "claude-3-sonnet-20240229",
+    "gemini": "gemini-pro",
+    "gemini-pro": "gemini-pro"
+  },
+  "llm_configs": {
+    "openai": {
+      "model": "gpt-4",
+      "max_tokens": 4000,
+      "temperature": 0.3
+    },
+    "deepseek": {
+      "model": "deepseek-chat",
+      "max_tokens": 4000,
+      "temperature": 0.3
+    },
+    "anthropic": {
+      "model": "claude-3-sonnet-20240229",
+      "max_tokens": 4000,
+      "temperature": 0.3
+    },
+    "gemini": {
+      "model": "gemini-pro",
+      "max_tokens": 4000,
+      "temperature": 0.3
+    }
+  },
+  "premise_library": {
+    "enabled": true,
+    "auto_select": true,
+    "max_primary_premises": 5,
+    "max_secondary_premises": 3,
+    "wisdom_overlay_threshold": 3
+  },
+  "module_selection": {
+    "auto_select": true,
+    "modes": {
+      "quick": {
+        "max_modules": 3,
+        "output_mode": "brief",
+        "focus": "essential"
+      },
+      "guided": {
+        "max_modules": 5,
+        "output_mode": "analytical",
+        "focus": "structured"
+      },
+      "expert": {
+        "max_modules": 7,
+        "output_mode": "analytical",
+        "focus": "comprehensive"
+      }
+    }
+  },
+  "output_parsing": {
+    "enabled": true,
+    "generate_html": true,
+    "generate_exports": true,
+    "include_metadata": true,
+    "include_confidence_scores": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "rai_app.log",
+    "max_file_size": "10MB",
+    "backup_count": 5,
+    "log_requests": true,
+    "log_responses": false,
+    "log_errors": true
+  },
+  "security": {
+    "rate_limiting": {
+      "enabled": false,
+      "requests_per_minute": 10,
+      "burst_allowance": 5
+    },
+    "cors": {
+      "enabled": true,
+      "origins": ["http://localhost:5000", "http://127.0.0.1:5000"]
+    },
+    "max_request_size": "16MB"
+  },
+  "development": {
+    "debug_endpoints": true,
+    "mock_llm_responses": false,
+    "simulate_delays": false,
+    "verbose_logging": true
+  }
+}
