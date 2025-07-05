@@ -164,7 +164,7 @@ class RAIWrapper:
             )
             
             # Step 3: Select relevant premises
-            premises = self._select_premises(rai_input)
+            premises = self._suggest_premises(rai_input.detected_topics)
             
             # Step 4: Determine module sequence
             modules = self._select_modules(rai_input, config)
