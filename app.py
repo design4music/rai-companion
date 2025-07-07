@@ -471,11 +471,11 @@ This framework ensures analysis meets high standards of **factual precision**, *
         logger.info("=" * 50)
         
         return prompt
-            
-        except Exception as e:
-            logger.error(f"Prompt building error: {str(e)}")
-            # Fallback prompt
-            return f"""
+        
+    except Exception as e:
+        logger.error(f"Prompt building error: {str(e)}")
+        # Fallback prompt
+        return f"""
 Analyze the following input using structured reasoning across fact, narrative, and system levels:
 
 "{rai_result.get('input', {}).get('raw_input', 'Input processing failed')}"
