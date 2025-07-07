@@ -430,8 +430,8 @@ This framework ensures analysis meets high standards of **factual precision**, *
                 prompt_parts.append(module_result["formatted_modules"])
             
             # 5. Input analysis from wrapper
-            if "input" in rai_result:
-                rai_input = rai_result["input"]
+            if "rai_input" in rai_result:
+                rai_input = rai_result["rai_input"]
                 prompt_parts.append(f"""
 **Input Analysis:**
 - Original Input: "{rai_input.raw_input}"
@@ -464,7 +464,7 @@ This framework ensures analysis meets high standards of **factual precision**, *
             
             # TEMPORARY DEBUG - Log what we're sending to DeepSeek
             logger.info("=" * 50)
-            logger.info(f"USER INPUT WAS: {rai_result.get('input', {}).get('raw_input', 'NO INPUT FOUND')}")
+            logger.info(f"USER INPUT WAS: {rai_result.get('rai_input', {}).get('raw_input', 'NO INPUT FOUND')}")
             logger.info("=" * 50)
             logger.info(f"FULL PROMPT BEING SENT TO DEEPSEEK:")
             logger.info(prompt)
