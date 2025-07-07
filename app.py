@@ -464,7 +464,10 @@ This framework ensures analysis meets high standards of **factual precision**, *
             
             # TEMPORARY DEBUG - Log what we're sending to DeepSeek
             logger.info("=" * 50)
-            logger.info(f"USER INPUT WAS: {rai_result.get('rai_input', {}).get('raw_input', 'NO INPUT FOUND')}")
+            if 'rai_input' in rai_result:
+                logger.info(f"USER INPUT WAS: {rai_result['rai_input'].raw_input}")
+            else:
+                logger.info("USER INPUT WAS: NO RAI_INPUT FOUND")
             logger.info("=" * 50)
             logger.info(f"FULL PROMPT BEING SENT TO DEEPSEEK:")
             logger.info(prompt)
@@ -474,10 +477,14 @@ This framework ensures analysis meets high standards of **factual precision**, *
         except Exception as e:
             logger.error(f"Prompt building error: {str(e)}")
             # Fallback prompt
+            input_text = "Input processing failed"
+            if 'rai_input' in rai_result:
+                input_text = rai_result['rai_input'].raw_input
+            
             return f"""
-Analyze the following input using structured reasoning across fact, narrative, and system levels:
-
-"{rai_result.get('input', {}).get('raw_input', 'Input processing failed')}"
+            Analyze the following input using structured reasoning across fact, narrative, and system levels:
+            
+            "{input_text}"
 
 Please provide:
 1. Factual analysis
