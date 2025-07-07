@@ -162,20 +162,27 @@ class RAICompanion:
                     "error_type": "validation"
                 }
             
+            logger.info(f"DEBUG STEP 0: Received input: '{user_input}'")
             logger.info(f"Starting analysis: model={selected_llm}, mode={analysis_mode}")
             
             # Step 1: Process input through RAI Wrapper
             rai_result = self._process_input_wrapper(user_input)
+            logger.info(f"DEBUG STEP 1: RAI Wrapper result keys: {list(rai_result.keys())}")
+            if 'input' in rai_result:
+                logger.info(f"DEBUG STEP 1: Raw input in result: '{rai_result['input'].raw_input}'")
+        
             if "error" in rai_result:
                 return rai_result
             
             # Step 2: Select relevant premises
             premise_result = self._select_premises(rai_result["rai_input"])
+            logger.info(f"DEBUG STEP 2: Premises selected: {len(premise_result.get('premises', []))}")
             if "error" in premise_result:
                 return premise_result
             
             # Step 3: Select analysis modules
             module_result = self._select_modules(rai_result["rai_input"], analysis_mode)
+            logger.info(f"DEBUG STEP 3: Modules selected: {len(module_result.get('modules', []))}")
             if "error" in module_result:
                 return module_result
             
@@ -183,6 +190,8 @@ class RAICompanion:
             complete_prompt = self._build_complete_prompt(
                 rai_result, premise_result, module_result, analysis_mode
             )
+            logger.info(f"DEBUG STEP 4: Prompt length: {len(complete_prompt)} chars")
+            logger.info(f"DEBUG STEP 4: First 200 chars of prompt: {complete_prompt[:200]}")
             
             # Step 5: Dispatch to selected LLM
             llm_result = self._dispatch_to_llm(complete_prompt, selected_llm)
@@ -450,7 +459,18 @@ This framework ensures analysis meets high standards of **factual precision**, *
 **Begin Analysis:**
 """)
             
-            return '\n'.join(prompt_parts)
+        # return '\n'.join(prompt_parts)
+        prompt = '\n'.join(prompt_parts)
+        
+        # TEMPORARY DEBUG - Log what we're sending to DeepSeek
+        logger.info("=" * 50)
+        logger.info(f"USER INPUT WAS: {rai_result.get('input', {}).get('raw_input', 'NO INPUT FOUND')}")
+        logger.info("=" * 50)
+        logger.info(f"FULL PROMPT BEING SENT TO DEEPSEEK:")
+        logger.info(prompt)
+        logger.info("=" * 50)
+        
+        return prompt
             
         except Exception as e:
             logger.error(f"Prompt building error: {str(e)}")
