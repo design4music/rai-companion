@@ -459,18 +459,18 @@ This framework ensures analysis meets high standards of **factual precision**, *
 **Begin Analysis:**
 """)
             
-        # return '\n'.join(prompt_parts)
-        prompt = '\n'.join(prompt_parts)
-        
-        # TEMPORARY DEBUG - Log what we're sending to DeepSeek
-        logger.info("=" * 50)
-        logger.info(f"USER INPUT WAS: {rai_result.get('input', {}).get('raw_input', 'NO INPUT FOUND')}")
-        logger.info("=" * 50)
-        logger.info(f"FULL PROMPT BEING SENT TO DEEPSEEK:")
-        logger.info(prompt)
-        logger.info("=" * 50)
-        
-        return prompt
+            # return '\n'.join(prompt_parts)
+            prompt = '\n'.join(prompt_parts)
+            
+            # TEMPORARY DEBUG - Log what we're sending to DeepSeek
+            logger.info("=" * 50)
+            logger.info(f"USER INPUT WAS: {rai_result.get('input', {}).get('raw_input', 'NO INPUT FOUND')}")
+            logger.info("=" * 50)
+            logger.info(f"FULL PROMPT BEING SENT TO DEEPSEEK:")
+            logger.info(prompt)
+            logger.info("=" * 50)
+            
+            return prompt
         
     except Exception as e:
         logger.error(f"Prompt building error: {str(e)}")
