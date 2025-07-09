@@ -33,7 +33,11 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=[
+    "https://r-a-i.org",
+    "http://localhost:5000", 
+    "http://127.0.0.1:5000"
+])
 
 # Global configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'rai-framework-secret-key-2025')
@@ -224,52 +228,76 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         except Exception as e:
             logger.error(f"LLM call error: {str(e)}")
             return {"status": "error", "error": f"LLM call failed: {str(e)}"}
-    """
+        
     def _parse_response(self, llm_response, metadata: Dict) -> Dict[str, Any]:
-        Parse LLM response with fallback
+        """Parse LLM response using the real output parser"""
         
         try:
             if self.components_loaded and self.output_parser:
+                # Use the real parser
                 parsed = self.output_parser.parse_llm_response(llm_response.content, metadata)
                 return {
-                    "html_content": self._generate_html(parsed),
+                    "html_content": parsed.html_content,
                     "input_summary": parsed.input_summary,
                     "processing_time": metadata.get("response_time", None)
                 }
             else:
-                # Fallback parsing
+                # Fallback with cleaner styling
                 return {
-                    "html_content": f"<div class='rai-analysis'><pre>{llm_response.content}</pre></div>",
+                    "html_content": f"""
+                    <div class='rai-analysis-container' style='white-space: pre-wrap;'>
+                        {self._convert_markdown_to_html(llm_response.content)}
+                    </div>
+                    """,
                     "input_summary": "Analysis completed",
                     "processing_time": None
                 }
                 
         except Exception as e:
             logger.error(f"Parse error: {str(e)}")
+            # Clean fallback without ugly styling
             return {
-                "html_content": f"<div class='rai-analysis'><pre>{llm_response.content}</pre></div>",
+                "html_content": f"""
+                <div class='rai-analysis-container' style='white-space: pre-wrap;'>
+                    {self._convert_markdown_to_html(llm_response.content)}
+                </div>
+                """,
                 "input_summary": "Analysis completed with parsing error",
                 "processing_time": None
             }
-    """
-    def _parse_response(self, llm_response, metadata: Dict) -> Dict[str, Any]:
-        """Parse LLM response with fallback - TEMPORARY DEBUG VERSION"""
+    def _convert_markdown_to_html(self, content: str) -> str:
+        """Simple markdown to HTML conversion"""
+        import re
         
-        # Skip the broken output_parser for now
-        raw_content = llm_response.content
+        # Convert headers
+        content = re.sub(r'^#### (.+)$', r'<h4>\1</h4>', content, flags=re.MULTILINE)
+        content = re.sub(r'^### (.+)$', r'<h3>\1</h3>', content, flags=re.MULTILINE)
+        content = re.sub(r'^## (.+)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
+        content = re.sub(r'^# (.+)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
         
-        return {
-            "html_content": f"""
-            <div class='rai-analysis-debug'>
-                <h3>🔍 RAI Analysis Results (Debug Mode)</h3>
-                <div style='white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 15px; border-radius: 5px;'>
-    {raw_content}
-                </div>
-            </div>
-            """,
-            "input_summary": "Analysis completed (debug mode)",
-            "processing_time": None
-        }
+        # Convert bold
+        content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
+        
+        # Convert italic  
+        content = re.sub(r'\*([^*]+)\*', r'<em>\1</em>', content)
+        
+        # Convert line breaks
+        content = re.sub(r'^---+$', '<hr>', content, flags=re.MULTILINE)
+        
+        # Convert bullet points
+        content = re.sub(r'^- (.+)$', r'<li>\1</li>', content, flags=re.MULTILINE)
+        
+        # Wrap paragraphs (basic)
+        lines = content.split('\n')
+        html_lines = []
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('<'):
+                html_lines.append(f'<p>{line}</p>')
+            else:
+                html_lines.append(line)
+        
+        return '\n'.join(html_lines)
 
     def _generate_html(self, parsed_result) -> str:
         """Generate simple HTML for frontend"""
