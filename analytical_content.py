@@ -1100,158 +1100,9 @@ MODULE_LIBRARY = {
     }
 }
 
-# Final Synthesis and Output Module
-
-FINAL_SYNTHESIS_MODULE = {
-    "name": "Final Synthesis and Output Module",
-    "purpose": "Integrate insights across all framework levels into a coherent final judgment.",
-    "module_type": "synthesis",
-    "execution_order": "final",
-    
-    "core_questions": [
-        "What is the final epistemic status of the core claims?",
-        "How strong is the overall adequacy of the submission?",
-        "What deeper structural or strategic insights emerged?"
-    ],
-    
-    "output_format": {
-        "claim_summary": {
-            "symbol": "🔍",
-            "title": "Claim Summary",
-            "description": "Reworded core claim(s) in neutral, testable form",
-            "format": "Clear, factual restatement stripped of emotional or rhetorical language"
-        },
-        
-        "epistemic_status_summary": {
-            "symbol": "📊", 
-            "title": "Epistemic Status Summary",
-            "components": {
-                "truth_likelihood": {
-                    "options": ["High", "Medium", "Low"],
-                    "description": "Assessment of claim accuracy based on available evidence"
-                },
-                "manipulation_risk": {
-                    "options": ["Low", "Medium", "High"],
-                    "description": "Likelihood that claim involves strategic manipulation or bias"
-                },
-                "evidence_coverage": {
-                    "options": ["Strong", "Partial", "Weak"],
-                    "description": "Comprehensiveness and quality of supporting evidence"
-                },
-                "source_integrity": {
-                    "options": ["Verified", "Mixed", "Unclear"],
-                    "description": "Reliability and independence of information sources"
-                }
-            }
-        },
-        
-        "integrated_evaluation_notes": {
-            "symbol": "🧠",
-            "title": "Integrated Evaluation Notes",
-            "required_elements": [
-                "Key factual findings",
-                "Narrative logic review", 
-                "Strategic/systemic insights",
-                "Detected asymmetries or blind spots"
-            ],
-            "description": "Synthesis of insights from FL, NL, and SL analysis levels"
-        },
-        
-        "guidance_next_steps": {
-            "symbol": "🔁",
-            "title": "Guidance & Next Steps (Optional)",
-            "components": [
-                "Suggested verification methods or research paths",
-                "Recommended rephrasing or follow-up questions"
-            ],
-            "description": "Actionable recommendations for further analysis or clarification"
-        }
-    },
-    
-    "wisdom_injected": [
-        "Conclusion is a judgment, not a closure.",
-        "Doubt can be wise — denial is not."
-    ],
-    
-    "philosophical_anchoring": ["D6.1", "D7.2", "D5.1"],
-    
-    "synthesis_methodology": {
-        "integration_process": [
-            "Review all FL, NL, and SL module outputs",
-            "Identify convergent and divergent findings across levels",
-            "Assess overall epistemic adequacy of the analysis",
-            "Formulate balanced judgment acknowledging uncertainties",
-            "Provide actionable guidance for continued inquiry"
-        ],
-        
-        "quality_criteria": [
-            "Acknowledges limitations and uncertainties",
-            "Integrates insights across all analytical levels", 
-            "Maintains epistemic humility in conclusions",
-            "Provides practical guidance for further analysis",
-            "Demonstrates philosophical adequacy over mechanical neutrality"
-        ]
-    },
-    
-    "output_template": """
-🔍 **Claim Summary:**
-{claim_summary}
-
-📊 **Epistemic Status Summary:**
-- Truth Likelihood: {truth_likelihood}
-- Manipulation Risk: {manipulation_risk} 
-- Evidence Coverage: {evidence_coverage}
-- Source Integrity: {source_integrity}
-
-🧠 **Integrated Evaluation Notes:**
-{factual_findings}
-{narrative_review}
-{systemic_insights}
-{asymmetries_blindspots}
-
-🔁 **Guidance & Next Steps:**
-{verification_methods}
-{follow_up_questions}
-""",
-    
-    "epistemic_assessment_criteria": {
-        "truth_likelihood": {
-            "high": "Multiple independent sources, verified facts, logical consistency",
-            "medium": "Some verification, moderate source diversity, minor inconsistencies",
-            "low": "Limited verification, source dependency, significant gaps or contradictions"
-        },
-        
-        "manipulation_risk": {
-            "low": "Minimal strategic incentives, diverse sources, transparent methodology",
-            "medium": "Some strategic interests, moderate source bias, unclear motivations", 
-            "high": "Clear strategic incentives, coordinated messaging, hidden agendas"
-        },
-        
-        "evidence_coverage": {
-            "strong": "Comprehensive evidence, multiple perspectives, key gaps addressed",
-            "partial": "Adequate evidence with some gaps, limited perspective diversity",
-            "weak": "Insufficient evidence, major gaps, one-sided perspective"
-        },
-        
-        "source_integrity": {
-            "verified": "Independent, credible sources with established track records",
-            "mixed": "Combination of reliable and questionable sources",
-            "unclear": "Unverified sources, conflicts of interest, credibility concerns"
-        }
-    },
-    
-    "integration_guidelines": {
-        "cross_level_synthesis": "Weave together factual findings, narrative coherence, and systemic insights",
-        "uncertainty_acknowledgment": "Explicitly state limitations and areas of uncertainty",
-        "adequacy_focus": "Prioritize analytical adequacy over false certainty or neutrality",
-        "actionable_guidance": "Provide concrete next steps for continued analysis or verification"
-    }
-}
-
 # ========================================
-# IV. ASSESSMENT FRAMEWORKS (AFTER MODULES)
+# IV. EPISTEMIC STATUS BLOCK
 # ========================================
-# IV.1 Epistemic Status Block - Reusable Format for Fact-Level Analysis
 EPISTEMIC_STATUS_BLOCK = {
     "name": "Epistemic Status Block (Reusable Format)",
     "purpose": "Reusable across any Fact-Level module to reflect the confidence and limits of available knowledge",
@@ -1374,31 +1225,37 @@ EPISTEMIC_STATUS_BLOCK = {
     }
 }
 
-# IV.2 OUTPUT FORMATTING GUIDANCE
-OUTPUT_FORMATTING = {
-    "structure_requirements": [
-        "Clear section headers indicating analysis level (FL/NL/SL)",
-        "Explicit confidence indicators and epistemic status",
-        "Integration of relevant philosophical premises",
-        "Final synthesis that bridges all analytical levels"
+# ========================================
+# V. FINAL SYNTHESIS MODULE 
+# ========================================
+FINAL_SYNTHESIS_MODULE = {
+    "name": "Final Synthesis and Output Module",
+    "purpose": "Integrate insights across all framework levels into a coherent final judgment.",
+    
+    "core_questions": [
+        "What is the final epistemic status of the core claims?",
+        "How strong is the overall adequacy of the submission?",
+        "What deeper structural or strategic insights emerged?"
     ],
     
-    "epistemic_transparency": [
-        "Acknowledge sources and their limitations",
-        "Flag areas of uncertainty or contested information", 
-        "Indicate confidence levels for different claims",
-        "Suggest areas for further investigation"
+    "output_components": [
+        "🔍 Claim Summary: Reworded core claim(s) in neutral, testable form",
+        "📊 Epistemic Status: Truth likelihood, manipulation risk, evidence coverage, source integrity",
+        "🧠 Integrated Evaluation: Key findings across fact, narrative, and system levels",
+        "🔁 Guidance & Next Steps: Verification methods and follow-up recommendations"
     ],
     
-    "philosophical_integration": [
-        "Weave relevant premises into reasoning naturally",
-        "Demonstrate adequate depth rather than surface analysis",
-        "Show awareness of structural and systemic factors",
-        "Maintain focus on adequacy over acceptability"
-    ]
+    "wisdom_injected": [
+        "Conclusion is a judgment, not a closure.",
+        "Doubt can be wise — denial is not."
+    ],
+    
+    "philosophical_anchoring": ["D6.1", "D7.2", "D5.1"]
 }
 
-# IV.3 FRAMEWORK METADATA
+# ========================================
+# VI. FRAMEWORK METADATA
+# ========================================
 FRAMEWORK_METADATA = {
     "author": "Max Micheliov",
     "release": "June 2025", 
