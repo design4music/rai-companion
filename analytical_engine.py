@@ -2,9 +2,7 @@
 RAI Analytical Engine - Unified Analysis Component Selection
 Real Artificial Intelligence Framework Implementation
 
-This module intelligently selects relevant RAI modules and their anchored premises
-using semantic LLM-based analysis rather than mechanical keyword matching.
-Replaces both module_selector.py and premise_engine.py with unified approach.
+git
 """
 
 import logging
@@ -153,36 +151,29 @@ class AnalyticalEngine:
         """
         Semantic module selection based on rich content descriptions
         
-        This is where we replace keyword matching with intelligent selection
-        based on module purposes and input context.
+        Selects modules based on input complexity and relevance, not artificial mode limits.
+        All modes get full analytical depth - they only differ in output verbosity.
         """
-        
-        # Mode-based selection limits
-        mode_limits = {
-            "quick": min(max_modules, 4),
-            "guided": min(max_modules, 6), 
-            "expert": min(max_modules, 8)
-        }
-        
-        limit = mode_limits.get(analysis_mode, 6)
         
         # Essential modules that should almost always be included
         essential_modules = ["CL-0"]  # Input normalization
         
         # Input type specific modules
         type_modules = {
-            "factual_claim": ["FL-1", "FL-8", "FL-3"],
-            "narrative": ["NL-1", "NL-2", "NL-3"], 
-            "system_premise": ["SL-1", "SL-2", "SL-4"],
-            "mixed": ["FL-1", "NL-1", "SL-1"]
+            "factual_claim": ["FL-1", "FL-8", "FL-3", "FL-2"],
+            "narrative": ["NL-1", "NL-2", "NL-3", "NL-4"], 
+            "system_premise": ["SL-1", "SL-2", "SL-4", "SL-8"],
+            "mixed": ["FL-1", "NL-1", "SL-1", "FL-8"]
         }
         
         # Topic-based modules
         topic_modules = {
-            "geopolitical": ["SL-1", "SL-4", "FL-7"],
-            "information": ["FL-2", "FL-3", "SL-8"],
-            "power_governance": ["SL-1", "SL-2", "CL-4"],
-            "systems": ["SL-6", "SL-8", "CL-2"]
+            "geopolitical": ["SL-1", "SL-4", "FL-7", "SL-8", "NL-4"],
+            "information": ["FL-2", "FL-3", "SL-8", "FL-9", "CL-4"],
+            "power_governance": ["SL-1", "SL-2", "CL-4", "CL-5"],
+            "systems": ["SL-6", "SL-8", "CL-2", "SL-9"],
+            "economy": ["SL-1", "SL-2", "FL-4", "FL-7"],
+            "cultural": ["NL-4", "NL-5", "SL-3", "CL-3"]
         }
         
         # Start with essential modules
@@ -192,36 +183,52 @@ class AnalyticalEngine:
         input_type = rai_input.input_type.value
         type_specific = type_modules.get(input_type, type_modules["mixed"])
         for module in type_specific:
-            if module not in selected and len(selected) < limit:
+            if module not in selected:
                 selected.append(module)
         
         # Add topic-specific modules
         for topic in rai_input.detected_topics:
             topic_specific = topic_modules.get(topic, [])
             for module in topic_specific:
-                if module not in selected and len(selected) < limit:
+                if module not in selected:
                     selected.append(module)
         
-        # Add high-stakes modules if complexity/emotion is high
-        if rai_input.complexity_score >= 4 or rai_input.emotional_charge >= 4:
-            high_stakes = ["FL-7", "FL-9", "SL-8", "CL-4"]
+        # Add complexity-based modules
+        if rai_input.complexity_score >= 4:
+            complex_modules = ["SL-8", "CL-2", "CL-3", "SL-9", "NL-3"]
+            for module in complex_modules:
+                if module not in selected:
+                    selected.append(module)
+        
+        # Add high-stakes modules for emotional/controversial content
+        if rai_input.emotional_charge >= 4:
+            high_stakes = ["FL-7", "FL-9", "CL-4", "CL-5", "SL-3"]
             for module in high_stakes:
-                if module not in selected and len(selected) < limit:
+                if module not in selected:
                     selected.append(module)
         
-        # Ensure we have representation across levels if space allows
+        # Ensure cross-level representation for comprehensive analysis
         levels_present = set(m.split('-')[0] for m in selected)
-        if len(selected) < limit:
-            for level in ["FL", "NL", "SL"]:
-                if level not in levels_present:
-                    # Add one module from missing level
-                    level_modules = [m for m in type_specific if m.startswith(level)]
-                    if level_modules and len(selected) < limit:
-                        selected.append(level_modules[0])
+        
+        # Add missing levels if we don't have good coverage
+        if "FL" not in levels_present:
+            selected.append("FL-1")  # Basic fact checking
+        if "NL" not in levels_present:
+            selected.append("NL-1")  # Basic narrative analysis
+        if "SL" not in levels_present:
+            selected.append("SL-1")  # Basic system analysis
+        
+        # Only limit for very simple inputs to avoid overkill
+        if (rai_input.complexity_score <= 2 and 
+            rai_input.emotional_charge <= 2 and 
+            not rai_input.detected_topics and
+            rai_input.input_type.value == "factual_claim"):
+            # Simple factual claim - limit to core modules
+            selected = selected[:6]
         
         logger.info(f"Selected modules: {selected}")
-        return selected[:limit]
-    
+        return selected 
+  
     def _build_analysis_components(self, module_ids: List[str]) -> List[AnalysisComponent]:
         """Build analysis components with modules and their anchored premises"""
         
@@ -450,7 +457,7 @@ class AnalyticalEngine:
             "formatted_components": self.format_for_prompt(selection)
         }
 
-
+"""
 # Example usage and testing
 if __name__ == "__main__":
     from rai_wrapper import RAIWrapper
@@ -477,3 +484,109 @@ if __name__ == "__main__":
     print(f"Rationale: {selection.selection_rationale}")
     print("\n=== FORMATTED FOR PROMPT ===")
     print(analytical_engine.format_for_prompt(selection))
+"""
+# Example usage and testing
+if __name__ == "__main__":
+    from rai_wrapper import RAIWrapper
+    
+    # Initialize engines
+    rai_wrapper = RAIWrapper()
+    analytical_engine = AnalyticalEngine()
+    
+    # Test cases with different types of inputs
+    test_cases = [
+        {
+            "name": "Information Warfare",
+            "input": "Western media coverage of Ukraine conflict shows clear bias and proves information warfare is real",
+            "expected_focus": "Information/Media analysis"
+        },
+        {
+            "name": "Factual Dispute", 
+            "input": "On March 15, 2024, reports confirmed that 50 civilians were killed in Mariupol bombing",
+            "expected_focus": "Fact verification and sourcing"
+        },
+        {
+            "name": "Power Analysis",
+            "input": "The deep state controls government policy through unelected bureaucrats and corporate influence",
+            "expected_focus": "Power dynamics and system analysis"
+        },
+        {
+            "name": "Causal Narrative",
+            "input": "NATO expansion led to Russian aggression because it threatened their security sphere",
+            "expected_focus": "Causal logic and narrative analysis"
+        },
+        {
+            "name": "Economic Argument",
+            "input": "Rising debt levels will force governments to implement austerity measures affecting social programs",
+            "expected_focus": "Economic power and resource control"
+        },
+        {
+            "name": "Cultural Identity",
+            "input": "American values of individual freedom are being eroded by collectivist ideologies from academia",
+            "expected_focus": "Cultural analysis and identity framing"
+        }
+    ]
+    
+    print("=" * 80)
+    print("ANALYTICAL ENGINE DYNAMIC TESTING")
+    print("=" * 80)
+    
+    for i, test_case in enumerate(test_cases, 1):
+        print(f"\n🧪 TEST CASE {i}: {test_case['name']}")
+        print(f"Input: \"{test_case['input']}\"")
+        print(f"Expected Focus: {test_case['expected_focus']}")
+        print("-" * 60)
+        
+        try:
+            # Process with RAI wrapper
+            rai_result = rai_wrapper.process_input(test_case['input'])
+            rai_input = rai_result['rai_input']
+            
+            # Select analysis components
+            selection = analytical_engine.select_analysis_components(rai_input, "guided")
+            
+            # Display results
+            print(f"📊 RESULTS:")
+            print(f"   Entry Point: {selection.entry_point}")
+            print(f"   Input Type: {rai_input.input_type.value}")
+            print(f"   Complexity: {rai_input.complexity_score}/5")
+            print(f"   Detected Topics: {', '.join(rai_input.detected_topics) if rai_input.detected_topics else 'None'}")
+            print(f"   Selected Modules: {', '.join(selection.execution_order)}")
+            print(f"   Total Premises: {selection.total_premises}")
+            print(f"   Rationale: {selection.selection_rationale}")
+            
+            # Show module breakdown by level
+            levels = {"CL": [], "FL": [], "NL": [], "SL": []}
+            for comp in selection.components:
+                level = comp.module_id.split('-')[0]
+                if level in levels:
+                    levels[level].append(comp.module_id)
+            
+            print(f"   Level Breakdown:")
+            for level, modules in levels.items():
+                if modules:
+                    print(f"     {level}: {', '.join(modules)}")
+            
+            # Show philosophical anchoring summary
+            all_premises = []
+            for comp in selection.components:
+                all_premises.extend(comp.philosophical_anchoring)
+            unique_premises = list(set(all_premises))
+            
+            if unique_premises:
+                print(f"   Philosophical Anchoring: {', '.join(sorted(unique_premises))}")
+            
+        except Exception as e:
+            print(f"   ❌ ERROR: {str(e)}")
+        
+        print()
+    
+    print("=" * 80)
+    print("🎯 ANALYSIS ACCURACY CHECK")
+    print("=" * 80)
+    print("Review the results above to assess:")
+    print("• Does entry point selection make sense for each input type?")
+    print("• Are the right modules being selected for each topic?")
+    print("• Do philosophical premises align with the content?")
+    print("• Is the selection rationale clear and logical?")
+    print("=" * 80)
