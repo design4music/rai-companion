@@ -1,16 +1,16 @@
 """
-RAI API Dispatcher v2 - Streamlined LLM Communication
+RAI API Dispatcher - LLM Provider Integration
 Real Artificial Intelligence Framework Implementation
 
-Focused on LLM communication only - parsing handled by output_parser.py
-Removed redundant response parsing and over-engineering.
+This module dispatches RAI-formatted prompts to various LLM providers
+(OpenAI, DeepSeek, Anthropic, Google Gemini) and handles response parsing.
 """
 
 import json
 import logging
 import time
 import os
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, Any, List
 from dataclasses import dataclass
 from enum import Enum
 import requests
@@ -38,7 +38,7 @@ class ResponseStatus(Enum):
 
 @dataclass
 class LLMResponse:
-    """Streamlined LLM response object"""
+    """Standardized LLM response object"""
     status: ResponseStatus
     content: str
     provider: str
@@ -46,28 +46,44 @@ class LLMResponse:
     tokens_used: Optional[int]
     response_time: float
     error_message: Optional[str]
+    raw_response: Optional[Dict]
+
+@dataclass
+class UsageStats:
+    """Track usage statistics"""
+    total_requests: int
+    successful_requests: int
+    failed_requests: int
+    total_tokens: int
+    total_cost_estimate: float
+    by_provider: Dict[str, int]
 
 class APIDispatcher:
     """
-    Streamlined API Dispatcher
+    RAI API Dispatcher
     
-    Handles communication with multiple LLM providers.
-    Parsing is handled by output_parser.py - this focuses purely on LLM communication.
+    Handles communication with multiple LLM providers:
+    - OpenAI (GPT-4, GPT-3.5)
+    - DeepSeek 
+    - Anthropic Claude
+    - Google Gemini
+    
+    Features:
+    - Automatic failover between providers
+    - Response parsing and standardization
+    - Usage tracking and logging
+    - Error handling and retries
     """
     
     def __init__(self, config_path: str = "config.json"):
         """Initialize dispatcher with configuration"""
         self.config = self._load_config(config_path)
+        self.usage_stats = UsageStats(0, 0, 0, 0, 0.0, {})
         self.model_aliases = self._build_model_aliases()
         self._setup_clients()
         
-        # Simple usage tracking
-        self.total_requests = 0
-        self.successful_requests = 0
-        self.failed_requests = 0
-        
     def _load_config(self, config_path: str) -> Dict:
-        """Load configuration from JSON file or environment"""
+        """Load configuration from JSON file"""
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
@@ -182,14 +198,12 @@ class APIDispatcher:
             timeout: Request timeout in seconds
             
         Returns:
-            LLMResponse object with response content
+            LLMResponse object with standardized response data
         """
         start_time = time.time()
-        self.total_requests += 1
         
         # Resolve model alias
         if model_alias not in self.model_aliases:
-            self.failed_requests += 1
             return LLMResponse(
                 status=ResponseStatus.ERROR,
                 content="",
@@ -197,14 +211,14 @@ class APIDispatcher:
                 model=model_alias,
                 tokens_used=None,
                 response_time=0.0,
-                error_message=f"Unknown model alias: {model_alias}"
+                error_message=f"Unknown model alias: {model_alias}",
+                raw_response=None
             )
         
         provider, model_name = self.model_aliases[model_alias]
         
         # Check if provider is configured
         if provider not in self.clients:
-            self.failed_requests += 1
             return LLMResponse(
                 status=ResponseStatus.ERROR,
                 content="",
@@ -212,10 +226,11 @@ class APIDispatcher:
                 model=model_name,
                 tokens_used=None,
                 response_time=0.0,
-                error_message=f"Provider {provider} not configured"
+                error_message=f"Provider {provider} not configured",
+                raw_response=None
             )
         
-        # Dispatch to appropriate provider with retries
+        # Dispatch to appropriate provider
         for attempt in range(max_retries):
             try:
                 if provider == "openai":
@@ -229,17 +244,17 @@ class APIDispatcher:
                 else:
                     raise ValueError(f"Unsupported provider: {provider}")
                 
-                # Calculate response time and log success
+                # Calculate response time
                 response.response_time = time.time() - start_time
-                self.successful_requests += 1
                 
-                logger.info(f"LLM success: {provider}/{model_name} - {response.tokens_used} tokens - {response.response_time:.2f}s")
+                # Log usage
+                self._log_usage(response)
+                
                 return response
                 
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed for {provider}: {str(e)}")
                 if attempt == max_retries - 1:
-                    self.failed_requests += 1
                     return LLMResponse(
                         status=ResponseStatus.ERROR,
                         content="",
@@ -247,7 +262,8 @@ class APIDispatcher:
                         model=model_name,
                         tokens_used=None,
                         response_time=time.time() - start_time,
-                        error_message=str(e)
+                        error_message=str(e),
+                        raw_response=None
                     )
                 time.sleep(2 ** attempt)  # Exponential backoff
     
@@ -270,8 +286,9 @@ class APIDispatcher:
                 provider="openai",
                 model=model,
                 tokens_used=response.usage.total_tokens,
-                response_time=0.0,
-                error_message=None
+                response_time=0.0,  # Will be set by caller
+                error_message=None,
+                raw_response=response.to_dict()
             )
             
         except openai.error.RateLimitError:
@@ -317,7 +334,8 @@ class APIDispatcher:
                 model=model,
                 tokens_used=result.get("usage", {}).get("total_tokens"),
                 response_time=0.0,
-                error_message=None
+                error_message=None,
+                raw_response=result
             )
             
         except requests.exceptions.Timeout:
@@ -334,6 +352,9 @@ class APIDispatcher:
     
     def _call_anthropic(self, prompt: str, model: str, timeout: int) -> LLMResponse:
         """Call Anthropic Claude API"""
+        if "anthropic" not in self.clients:
+            raise Exception("Anthropic client not configured")
+        
         config = self.config["anthropic"]
         client = self.clients["anthropic"]
         
@@ -353,7 +374,8 @@ class APIDispatcher:
                 model=model,
                 tokens_used=response.usage.input_tokens + response.usage.output_tokens,
                 response_time=0.0,
-                error_message=None
+                error_message=None,
+                raw_response=response.to_dict() if hasattr(response, 'to_dict') else None
             )
             
         except Exception as e:
@@ -366,6 +388,9 @@ class APIDispatcher:
     
     def _call_gemini(self, prompt: str, model: str, timeout: int) -> LLMResponse:
         """Call Google Gemini API"""
+        if "gemini" not in self.clients:
+            raise Exception("Gemini client not configured")
+        
         config = self.config["gemini"]
         genai = self.clients["gemini"]
         
@@ -389,7 +414,8 @@ class APIDispatcher:
                 model=model,
                 tokens_used=None,  # Gemini doesn't always provide token counts
                 response_time=0.0,
-                error_message=None
+                error_message=None,
+                raw_response=None
             )
             
         except Exception as e:
@@ -400,6 +426,137 @@ class APIDispatcher:
             else:
                 raise Exception(f"Gemini API error: {str(e)}")
     
+    def _log_usage(self, response: LLMResponse):
+        """Log usage statistics"""
+        self.usage_stats.total_requests += 1
+        
+        if response.status == ResponseStatus.SUCCESS:
+            self.usage_stats.successful_requests += 1
+            if response.tokens_used:
+                self.usage_stats.total_tokens += response.tokens_used
+        else:
+            self.usage_stats.failed_requests += 1
+        
+        # Track by provider
+        provider = response.provider
+        if provider not in self.usage_stats.by_provider:
+            self.usage_stats.by_provider[provider] = 0
+        self.usage_stats.by_provider[provider] += 1
+        
+        # Log to file
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "provider": response.provider,
+            "model": response.model,
+            "status": response.status.value,
+            "tokens_used": response.tokens_used,
+            "response_time": response.response_time,
+            "error": response.error_message
+        }
+        
+        logger.info(f"LLM Request: {json.dumps(log_entry)}")
+    
+    def parse_rai_response(self, llm_response: LLMResponse) -> Dict[str, str]:
+        """
+        Parse LLM response into structured RAI components
+        
+        Returns:
+            Dict with fact_level, narrative_level, system_level, final_synthesis
+        """
+        if llm_response.status != ResponseStatus.SUCCESS:
+            return {
+                "fact_level": "",
+                "narrative_level": "",
+                "system_level": "",
+                "final_synthesis": f"Error: {llm_response.error_message}",
+                "raw_response": llm_response.content
+            }
+        
+        content = llm_response.content
+        
+        # Try to parse structured sections
+        try:
+            parsed = self._extract_rai_sections(content)
+            parsed["raw_response"] = content
+            return parsed
+        except Exception as e:
+            logger.warning(f"Failed to parse RAI sections: {e}")
+            # Fallback to raw content
+            return {
+                "fact_level": "Parsing failed - see raw response",
+                "narrative_level": "",
+                "system_level": "",
+                "final_synthesis": content[:500] + "..." if len(content) > 500 else content,
+                "raw_response": content
+            }
+    
+    def _extract_rai_sections(self, content: str) -> Dict[str, str]:
+        """Extract RAI sections from LLM response"""
+        
+        # Common section markers
+        section_markers = {
+            "fact_level": [
+                "**Fact-Level", "**FACT-LEVEL", "**FL-", "**Factual Analysis",
+                "## Fact-Level", "### Fact-Level", "# Fact-Level"
+            ],
+            "narrative_level": [
+                "**Narrative-Level", "**NARRATIVE-LEVEL", "**NL-", "**Narrative Analysis",
+                "## Narrative-Level", "### Narrative-Level", "# Narrative-Level"
+            ],
+            "system_level": [
+                "**System-Level", "**SYSTEM-LEVEL", "**SL-", "**System Analysis",
+                "## System-Level", "### System-Level", "# System-Level"
+            ],
+            "final_synthesis": [
+                "**Final Synthesis", "**FINAL SYNTHESIS", "**Synthesis", "**Conclusion",
+                "## Final Synthesis", "### Final Synthesis", "# Final Synthesis"
+            ]
+        }
+        
+        sections = {
+            "fact_level": "",
+            "narrative_level": "",
+            "system_level": "",
+            "final_synthesis": ""
+        }
+        
+        lines = content.split('\n')
+        current_section = None
+        current_content = []
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            # Check if this line starts a new section
+            new_section = None
+            for section_name, markers in section_markers.items():
+                if any(marker in line for marker in markers):
+                    new_section = section_name
+                    break
+            
+            if new_section:
+                # Save previous section
+                if current_section and current_content:
+                    sections[current_section] = '\n'.join(current_content).strip()
+                
+                # Start new section
+                current_section = new_section
+                current_content = []
+            elif current_section:
+                # Add to current section
+                current_content.append(line)
+        
+        # Save final section
+        if current_section and current_content:
+            sections[current_section] = '\n'.join(current_content).strip()
+        
+        # If no structured sections found, try simpler fallback
+        if not any(sections.values()):
+            # Split by major headings or just use full content
+            sections["final_synthesis"] = content.strip()
+        
+        return sections
+    
     def get_available_models(self) -> List[str]:
         """Get list of available model aliases"""
         available = []
@@ -409,14 +566,16 @@ class APIDispatcher:
         return sorted(available)
     
     def get_usage_stats(self) -> Dict:
-        """Get simple usage statistics"""
+        """Get current usage statistics"""
         return {
-            "total_requests": self.total_requests,
-            "successful_requests": self.successful_requests,
-            "failed_requests": self.failed_requests,
+            "total_requests": self.usage_stats.total_requests,
+            "successful_requests": self.usage_stats.successful_requests,
+            "failed_requests": self.usage_stats.failed_requests,
             "success_rate": (
-                self.successful_requests / max(self.total_requests, 1)
-            ) * 100 if self.total_requests > 0 else 0
+                self.usage_stats.successful_requests / max(self.usage_stats.total_requests, 1)
+            ) * 100,
+            "total_tokens": self.usage_stats.total_tokens,
+            "by_provider": self.usage_stats.by_provider
         }
     
     def test_connection(self, model_alias: str) -> bool:
@@ -427,27 +586,56 @@ class APIDispatcher:
         return response.status == ResponseStatus.SUCCESS
 
 
-# Example usage
+# Example usage and testing
 if __name__ == "__main__":
+    # Initialize dispatcher
     dispatcher = APIDispatcher()
     
+    # Test prompt
+    test_prompt = """
+    You are operating under the Real Artificial Intelligence (RAI) Framework.
+    
+    Please analyze this claim: "The media is biased against certain political figures."
+    
+    **Execute the following RAI modules:**
+    - FL-1: Claim Clarity and Anchoring
+    - NL-1: Cause-Effect Chain Analysis
+    - SL-1: Power and Incentive Mapping
+    
+    Provide structured output with clear sections for Fact-Level, Narrative-Level, System-Level, and Final Synthesis.
+    """
+    
+    # Test available models
     available_models = dispatcher.get_available_models()
     print(f"Available models: {available_models}")
     
     if available_models:
-        # Quick test
+        # Test first available model
         model = available_models[0]
-        print(f"\nTesting {model}...")
+        print(f"\nTesting with {model}...")
         
-        test_prompt = "Please respond with 'RAI test successful' if you can read this."
         response = dispatcher.dispatch_to_llm(test_prompt, model)
         
         print(f"Status: {response.status.value}")
-        if response.status.value == "success":
-            print(f"Response: {response.content}")
-            print(f"Tokens: {response.tokens_used}")
-            print(f"Time: {response.response_time:.2f}s")
+        print(f"Provider: {response.provider}")
+        print(f"Model: {response.model}")
+        print(f"Tokens: {response.tokens_used}")
+        print(f"Response time: {response.response_time:.2f}s")
+        
+        if response.status == ResponseStatus.SUCCESS:
+            # Parse response
+            parsed = dispatcher.parse_rai_response(response)
+            print("\n=== PARSED RESPONSE ===")
+            for section, content in parsed.items():
+                if content and section != "raw_response":
+                    print(f"\n**{section.upper()}:**")
+                    print(content[:200] + "..." if len(content) > 200 else content)
         else:
             print(f"Error: {response.error_message}")
         
-        print(f"\nUsage stats: {dispatcher.get_usage_stats()}")
+        # Show usage stats
+        print(f"\n=== USAGE STATS ===")
+        stats = dispatcher.get_usage_stats()
+        print(json.dumps(stats, indent=2))
+    else:
+        print("No models available. Check your configuration.")
