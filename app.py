@@ -236,7 +236,7 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
             # Use our custom markdown converter directly
             return {
                 "html_content": f"""
-                <div class='rai-analysis-container' style='white-space: pre-wrap;'>
+                <div class='rai-analysis-container'>
                     {self._convert_markdown_to_html(llm_response.content)}
                 </div>
                 """,
@@ -248,7 +248,7 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
             logger.error(f"Parse error: {str(e)}")
             # Basic fallback
             return {
-                "html_content": f"<div style='white-space: pre-wrap;'>{llm_response.content}</div>",
+                "html_content": f"<div>{llm_response.content}</div>",
                 "input_summary": "Analysis completed with error",
                 "processing_time": None
             }
