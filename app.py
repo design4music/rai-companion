@@ -289,9 +289,9 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         content = re.sub(r'^# (.+)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
         
         # AGGRESSIVE CLEANUP: Remove # symbols from inside headers
-        content = re.sub(r'<h([1-6])>(\s*#\s*)', r'<h\1>', content)  # Remove # at start
-        content = re.sub(r'(\s*#\s*)</h([1-6])>', r'</h\2>', content)  # Remove # at end
-        content = re.sub(r'<h([1-6])>([^<]*?)#([^<]*?)</h([1-6])>', r'<h\1>\2\3</h\4>', content)  # Remove # in middle
+        content = re.sub(r'<h([1-6])>[^<]*?#[^<]*?<strong>([^<]+)</strong>[^<]*?</h([1-6])>', r'<h\1>\2</h\3>', content)
+        content = re.sub(r'<h([1-6])>[^<]*?#([^<]+)</h([1-6])>', r'<h\1>\2</h\3>', content)
+        content = re.sub(r'<h([1-6])><strong>([^<]+)</strong></h([1-6])>', r'<h\1>\2</h\3>', content)
         
         # Convert bold and italic
         content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
@@ -347,7 +347,33 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         if in_list:
             processed_lines.append('</ul>')
         
-        return '\n'.join(processed_lines)
+        processed_content = '\n'.join(processed_lines)
+        return self._wrap_orphaned_lists(processed_content)
+    
+    def _wrap_orphaned_lists(self, html_content):
+        """Post-process to wrap orphaned <li> elements"""
+        lines = html_content.split('\n')
+        result = []
+        in_list = False
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            if '<li class="rai-' in stripped:
+                if not in_list:
+                    result.append('<ul class="rai-bullet-list">')
+                    in_list = True
+                result.append(line)
+            else:
+                if in_list and stripped and not stripped.startswith('<li'):
+                    result.append('</ul>')
+                    in_list = False
+                result.append(line)
+        
+        if in_list:
+            result.append('</ul>')
+        
+        return '\n'.join(result)
 
     def _generate_html(self, parsed_result) -> str:
         """Generate simple HTML for frontend"""
