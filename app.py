@@ -230,39 +230,26 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
             return {"status": "error", "error": f"LLM call failed: {str(e)}"}
         
     def _parse_response(self, llm_response, metadata: Dict) -> Dict[str, Any]:
-        """Parse LLM response using the real output parser"""
+        """Parse LLM response using custom markdown converter"""
         
         try:
-            if self.components_loaded and self.output_parser:
-                # Use the real parser
-                parsed = self.output_parser.parse_llm_response(llm_response.content, metadata)
-                return {
-                    "html_content": parsed.html_content,
-                    "input_summary": parsed.input_summary,
-                    "processing_time": metadata.get("response_time", None)
-                }
-            else:
-                # Fallback with cleaner styling
-                return {
-                    "html_content": f"""
-                    <div class='rai-analysis-container' style='white-space: pre-wrap;'>
-                        {self._convert_markdown_to_html(llm_response.content)}
-                    </div>
-                    """,
-                    "input_summary": "Analysis completed",
-                    "processing_time": None
-                }
-                
-        except Exception as e:
-            logger.error(f"Parse error: {str(e)}")
-            # Clean fallback without ugly styling
+            # Use our custom markdown converter directly
             return {
                 "html_content": f"""
                 <div class='rai-analysis-container' style='white-space: pre-wrap;'>
                     {self._convert_markdown_to_html(llm_response.content)}
                 </div>
                 """,
-                "input_summary": "Analysis completed with parsing error",
+                "input_summary": "Analysis completed",
+                "processing_time": metadata.get("response_time", None)
+            }
+                
+        except Exception as e:
+            logger.error(f"Parse error: {str(e)}")
+            # Basic fallback
+            return {
+                "html_content": f"<div style='white-space: pre-wrap;'>{llm_response.content}</div>",
+                "input_summary": "Analysis completed with error",
                 "processing_time": None
             }
 
