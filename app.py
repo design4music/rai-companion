@@ -267,10 +267,13 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
             }
 
     def _convert_markdown_to_html(self, content: str) -> str:
-        """Enhanced markdown to HTML conversion with better typography"""
+        """Enhanced markdown to HTML conversion - robust version"""
         import re
         
-        # First, handle the special first header (Final Synthesis)
+        # DEBUG: Log first 200 chars to see format
+        logger.info(f"DEBUG CONTENT: {content[:200]}")
+        
+        # Handle the special main header first
         content = re.sub(
             r'^\*\*Final Synthesis[^*]*\*\*', 
             r'<div class="rai-final-synthesis-header">\g<0></div>', 
@@ -278,16 +281,17 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
             flags=re.MULTILINE
         )
         
-        # Convert headers (keeping hierarchy)
+        # Convert markdown headers to HTML
         content = re.sub(r'^##### (.+)$', r'<h5>\1</h5>', content, flags=re.MULTILINE)
         content = re.sub(r'^#### (.+)$', r'<h4>\1</h4>', content, flags=re.MULTILINE)  
         content = re.sub(r'^### (.+)$', r'<h3>\1</h3>', content, flags=re.MULTILINE)
         content = re.sub(r'^## (.+)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
         content = re.sub(r'^# (.+)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
         
-        # Remove # symbols from headers that are already bold
-        content = re.sub(r'<h([1-6])># \*\*([^*]+)\*\*</h([1-6])>', r'<h\1>\2</h\3>', content)
-        content = re.sub(r'<h([1-6])># (.+)</h([1-6])>', r'<h\1>\2</h\3>', content)
+        # AGGRESSIVE CLEANUP: Remove # symbols from inside headers
+        content = re.sub(r'<h([1-6])>(\s*#\s*)', r'<h\1>', content)  # Remove # at start
+        content = re.sub(r'(\s*#\s*)</h([1-6])>', r'</h\2>', content)  # Remove # at end
+        content = re.sub(r'<h([1-6])>([^<]*?)#([^<]*?)</h([1-6])>', r'<h\1>\2\3</h\4>', content)  # Remove # in middle
         
         # Convert bold and italic
         content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
@@ -296,71 +300,53 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         # Convert horizontal rules
         content = re.sub(r'^---+$', '<hr class="rai-section-divider">', content, flags=re.MULTILINE)
         
-        # Process line by line for proper list and paragraph handling
+        # BETTER LIST HANDLING - process line by line
         lines = content.split('\n')
         processed_lines = []
-        in_ul = False
-        in_ol = False
+        in_list = False
         
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
+        for line in lines:
+            stripped = line.strip()
             
-            # Skip empty lines for now, we'll add spacing later
-            if not line:
-                i += 1
-                continue
-            
-            # Check for bullet list items
-            if re.match(r'^[-*+•] (.+)$', line):
-                if not in_ul:
-                    if in_ol:
-                        processed_lines.append('</ol>')
-                        in_ol = False
+            # More flexible list detection
+            if re.match(r'^[-*+•]\s+(.+)$', stripped) or re.match(r'^\s*[-*+•]\s+(.+)$', line):
+                if not in_list:
                     processed_lines.append('<ul class="rai-bullet-list">')
-                    in_ul = True
+                    in_list = True
                 
-                list_content = re.sub(r'^[-*+•] (.+)$', r'\1', line)
+                # Extract content after bullet (handle both stripped and original line)
+                if re.match(r'^[-*+•]\s+(.+)$', stripped):
+                    list_content = re.sub(r'^[-*+•]\s+(.+)$', r'\1', stripped)
+                else:
+                    list_content = re.sub(r'^\s*[-*+•]\s+(.+)$', r'\1', line)
+                
                 processed_lines.append(f'<li class="rai-list-item">{list_content}</li>')
             
-            # Check for numbered list items
-            elif re.match(r'^\d+\. (.+)$', line):
-                if not in_ol:
-                    if in_ul:
-                        processed_lines.append('</ul>')
-                        in_ul = False
+            # Handle numbered lists
+            elif re.match(r'^\d+\.\s+(.+)$', stripped):
+                if not in_list:
                     processed_lines.append('<ol class="rai-numbered-list">')
-                    in_ol = True
+                    in_list = True
                 
-                list_content = re.sub(r'^\d+\. (.+)$', r'\1', line)
+                list_content = re.sub(r'^\d+\.\s+(.+)$', r'\1', stripped)
                 processed_lines.append(f'<li class="rai-list-item">{list_content}</li>')
             
             else:
-                # Close any open lists
-                if in_ul:
-                    processed_lines.append('</ul>')
-                    in_ul = False
-                if in_ol:
-                    processed_lines.append('</ol>')
-                    in_ol = False
+                # Close any open list
+                if in_list:
+                    processed_lines.append('</ul>')  # Assuming bullet lists are more common
+                    in_list = False
                 
-                # Handle other content
-                if line.startswith('<'):
-                    # Already HTML (headers, etc.)
-                    processed_lines.append(line)
-                else:
-                    # Regular paragraph
-                    processed_lines.append(f'<p class="rai-paragraph">{line}</p>')
-            
-            i += 1
+                # Add non-list content
+                if stripped and not stripped.startswith('<'):
+                    processed_lines.append(f'<p class="rai-paragraph">{stripped}</p>')
+                elif stripped:
+                    processed_lines.append(stripped)
         
-        # Close any remaining open lists
-        if in_ul:
+        # Close any remaining list
+        if in_list:
             processed_lines.append('</ul>')
-        if in_ol:
-            processed_lines.append('</ol>')
         
-        # Join with proper spacing
         return '\n'.join(processed_lines)
 
     def _generate_html(self, parsed_result) -> str:
