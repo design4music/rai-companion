@@ -450,9 +450,14 @@ def health_check():
 
 @app.route('/config', methods=['GET'])
 def get_config():
-    """Get configuration"""
+    """Get configuration - simplified model list"""
     return jsonify({
-        "available_models": rai_companion.get_available_models(),
+        "available_models": {
+            "gpt-4": "GPT-4 (Coming Soon)",
+            "claude": "Claude (Coming Soon)", 
+            "gemini": "Gemini (Coming Soon)",
+            "deepseek": "DeepSeek"
+        },
         "analysis_modes": ["quick", "guided", "expert"],
         "max_input_length": rai_companion.config.get("analysis", {}).get("max_input_length", 10000)
     })
