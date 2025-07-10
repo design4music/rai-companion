@@ -282,16 +282,16 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         )
         
         # Convert markdown headers to HTML
+        # STEP 1: Clean raw markdown FIRST (before HTML conversion)
+        content = re.sub(r'^(#{1,6})\s*#\s*(\*\*.*?\*\*)', r'\1 \2', content, flags=re.MULTILINE)
+        content = re.sub(r'^(#{1,6})\s*#\s*(.+)$', r'\1 \2', content, flags=re.MULTILINE)
+
+        # STEP 2: Now convert cleaned markdown to HTML
         content = re.sub(r'^##### (.+)$', r'<h5>\1</h5>', content, flags=re.MULTILINE)
         content = re.sub(r'^#### (.+)$', r'<h4>\1</h4>', content, flags=re.MULTILINE)  
         content = re.sub(r'^### (.+)$', r'<h3>\1</h3>', content, flags=re.MULTILINE)
         content = re.sub(r'^## (.+)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
         content = re.sub(r'^# (.+)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
-        
-        # AGGRESSIVE CLEANUP: Remove # symbols from inside headers
-        content = re.sub(r'<h([1-6])>[^<]*?#[^<]*?<strong>([^<]+)</strong>[^<]*?</h([1-6])>', r'<h\1>\2</h\3>', content)
-        content = re.sub(r'<h([1-6])>[^<]*?#([^<]+)</h([1-6])>', r'<h\1>\2</h\3>', content)
-        content = re.sub(r'<h([1-6])><strong>([^<]+)</strong></h([1-6])>', r'<h\1>\2</h\3>', content)
         
         # Convert bold and italic
         content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
