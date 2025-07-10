@@ -265,8 +265,9 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
                 "input_summary": "Analysis completed with parsing error",
                 "processing_time": None
             }
+
     def _convert_markdown_to_html(self, content: str) -> str:
-        """Simple markdown to HTML conversion"""
+        """Simple markdown to HTML conversion with proper list handling"""
         import re
         
         # Convert headers
@@ -275,29 +276,56 @@ Analyze with **factual precision**, **narrative coherence**, and **systemic insi
         content = re.sub(r'^## (.+)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
         content = re.sub(r'^# (.+)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
         
-        # Convert bold
+        # Convert bold and italic
         content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
-        
-        # Convert italic  
         content = re.sub(r'\*([^*]+)\*', r'<em>\1</em>', content)
         
-        # Convert line breaks
+        # Convert horizontal rules
         content = re.sub(r'^---+$', '<hr>', content, flags=re.MULTILINE)
         
-        # Convert bullet points
-        content = re.sub(r'^- (.+)$', r'<li>\1</li>', content, flags=re.MULTILINE)
-        
-        # Wrap paragraphs (basic)
+        # Handle lists properly
         lines = content.split('\n')
-        html_lines = []
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith('<'):
-                html_lines.append(f'<p>{line}</p>')
-            else:
-                html_lines.append(line)
+        processed_lines = []
+        in_list = False
         
-        return '\n'.join(html_lines)
+        for line in lines:
+            stripped = line.strip()
+            
+            # Check if this is a list item
+            if re.match(r'^[-*+•] (.+)$', stripped):
+                if not in_list:
+                    processed_lines.append('<ul>')
+                    in_list = True
+                # Extract content after the bullet
+                list_content = re.sub(r'^[-*+•] (.+)$', r'\1', stripped)
+                processed_lines.append(f'<li>{list_content}</li>')
+            
+            # Check if this is a numbered list item
+            elif re.match(r'^\d+\. (.+)$', stripped):
+                if not in_list:
+                    processed_lines.append('<ol>')
+                    in_list = True
+                # Extract content after the number
+                list_content = re.sub(r'^\d+\. (.+)$', r'\1', stripped)
+                processed_lines.append(f'<li>{list_content}</li>')
+            
+            else:
+                # Not a list item
+                if in_list:
+                    processed_lines.append('</ul>')  # Close any open list
+                    in_list = False
+                
+                # Add the line (could be heading, paragraph, etc.)
+                if stripped and not stripped.startswith('<'):
+                    processed_lines.append(f'<p>{stripped}</p>')
+                elif stripped:
+                    processed_lines.append(stripped)
+        
+        # Close any remaining open list
+        if in_list:
+            processed_lines.append('</ul>')
+        
+        return '\n'.join(processed_lines)
 
     def _generate_html(self, parsed_result) -> str:
         """Generate simple HTML for frontend"""
